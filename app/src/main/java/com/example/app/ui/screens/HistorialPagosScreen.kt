@@ -37,7 +37,7 @@ fun HistorialPagosScreen(
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(comprobante.empresa)
                             Text(comprobante.concepto)
-                            Text("$${comprobante.montoPagado} · ${comprobante.fechaHora}")
+                            Text("${formatearMonto(comprobante.montoPagado)} · ${comprobante.fechaHora}")
                             Text("Comprobante ${comprobante.numero}")
                         }
                     }
@@ -46,3 +46,7 @@ fun HistorialPagosScreen(
         }
     }
 }
+
+private fun formatearMonto(monto: Int): String =
+    "$" + java.text.NumberFormat.getIntegerInstance(java.util.Locale("es", "CL")).format(monto)
+

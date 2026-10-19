@@ -16,9 +16,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.app.model.Compromiso
 import com.example.app.model.PagoFlexUiState
+import com.example.app.model.Usuario
 import com.example.app.ui.components.BotonPrincipal
 import com.example.app.ui.components.CampoTexto
 import com.example.app.ui.components.TarjetaCompromiso
@@ -47,7 +49,8 @@ fun EmpresaScreen(
             onClick = {
                 val valor = formulario.monto.toIntOrNull()
                 val hoy = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-                if (formulario.persona.isBlank() || formulario.concepto.isBlank() || valor == null || valor <= 0 || !formulario.vencimiento.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) || formulario.vencimiento < hoy) {
+                if (formulario.persona.isBlank() || formulario.concepto.isBlank() || valor == null || valor <= 0 ||
+                    !formulario.vencimiento.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) || formulario.vencimiento < hoy) {
                     mensaje = "Completa los datos y usa una fecha desde hoy."
                 } else if (onRegistrar(formulario.persona, formulario.concepto, valor, formulario.vencimiento)) {
                     mensaje = "Compromiso registrado."
@@ -65,3 +68,5 @@ fun EmpresaScreen(
         }
     }
 }
+
+

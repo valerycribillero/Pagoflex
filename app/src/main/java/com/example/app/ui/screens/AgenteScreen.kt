@@ -3,7 +3,6 @@ package com.example.app.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,8 +17,7 @@ import com.example.app.ui.components.BotonPrincipal
 import com.example.app.ui.components.EtiquetaEstado
 import com.example.app.ui.components.TarjetaSeccion
 
-@Composable
-fun AgenteScreen(reportes: List<Reporte>, onVolver: () -> Unit, onResolver: (Reporte) -> Unit) {
+@Composable fun AgenteScreen(reportes: List<Reporte>, onVolver: () -> Unit, onResolver: (Reporte) -> Unit) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(16.dp)) {
         TextButton(onClick = onVolver) { Text("Cerrar sesión") }
         Text("Reportes recibidos")

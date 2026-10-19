@@ -17,7 +17,7 @@ class PagoFlexDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_BD = "PagoFlex.db"
-        private const val VERSION_BD = 8
+        private const val VERSION_BD = 9
         private const val TABLA_ROLES = "roles"
         private const val TABLA_USUARIOS = "usuarios"
         private const val TABLA_SERVICIOS = "servicios"
@@ -104,28 +104,18 @@ class PagoFlexDbHelper(context: Context) :
 
         private const val SQL_PRECARGAR_USUARIOS =
             "INSERT INTO $TABLA_USUARIOS ($RUT, $NOMBRE, $CORREO, $CONTRASENA, $ID_ROL) VALUES " +
-                    "('20.435.214-5', 'Sofia Perez', 'sofia@gmail.com', 'cli123', 1), " +
-                    "('10.625.244-K', 'Matias Sanchez', 'matias@gmail.com', 'age123', 2), " +
-                    "('9.742.142-2', 'Miranda Sepulveda', 'miranda@gmail.com', 'eje123', 3)"
+                    "('20.435.214-5', 'Sofia Perez', 'sofia@duocuc.cl', 'cli123', 1), " +
+                    "('10.625.244-K', 'Matias Sanchez', 'matias@pagoflex.com', 'age123', 2), " +
+                    "('9.742.142-2', 'Miranda Sepulveda', 'miranda@empresa.com', 'eje123', 3)"
 
-        private const val SQL_PRECARGAR_COMPROMISOS =
-            "INSERT INTO $TABLA_COMPROMISOS ($FOLIO, $ID_USUARIO, $NOMBRE_EMPRESA, $CONCEPTO, $MONTO, $VENCIMIENTO, $ESTADO, $RECARGO) VALUES " +
-                    "('PF-001', 1, 'Crédito Andino', 'Cuota de crédito', 112000, '2026-10-20', 'Pendiente', 12000), " +
-                    "('PF-002', 1, 'Comunidad Los Aromos', 'Gasto común', 78500, '2026-10-25', 'Pendiente', 0), " +
-                    "('PF-003', 1, 'Altos del Maipo', 'Cuota de arriendo', 120000, '2026-10-10', 'Vencido', 8500)"
-
-        private const val SQL_PRECARGAR_ENEL =
-            "INSERT OR IGNORE INTO $TABLA_COMPROMISOS " +
-                    "($FOLIO, $ID_USUARIO, $NOMBRE_EMPRESA, $CONCEPTO, $MONTO, $VENCIMIENTO, $ESTADO, $RECARGO) VALUES " +
-                    "('PF-ENEL-001', 1, 'Enel', 'Cuenta de electricidad', 42000, '2026-10-25', 'Pendiente', 0)"
 
         private const val SQL_PRECARGAR_COMPROMISOS_CLIENTE =
             "INSERT OR IGNORE INTO $TABLA_COMPROMISOS " +
                     "($FOLIO, $ID_USUARIO, $NOMBRE_EMPRESA, $CONCEPTO, $MONTO, $VENCIMIENTO, $ESTADO, $RECARGO) VALUES " +
-                    "('PF-UNI-001', 1, 'Universidad', 'Mensualidad', 350000, '2026-10-15', 'Pendiente', 0), " +
-                    "('PF-LUZ-001', 1, 'Luz', 'Cuenta de luz', 28000, '2026-10-20', 'Pendiente', 0), " +
-                    "('PF-COND-001', 1, 'Condominio', 'Gasto común', 45000, '2026-10-28', 'Pendiente', 0), " +
-                    "('PF-AGUA-001', 1, 'Agua', 'Cuenta de agua', 35000, '2026-10-29', 'Pendiente', 0)"
+                    "('PF-UNI-001', 1, 'Duoc Uc', 'Mensualidad', 356000, '2026-10-25', 'Pendiente', 7000), " +
+                    "('PF-LUZ-001', 1, 'Enel', 'Luz', 28000, '2026-10-20', 'Pendiente', 1100), " +
+                    "('PF-COND-001', 1, 'Condominio', 'Gasto común', 45000, '2026-10-28', 'Pendiente', 3000), " +
+                    "('PF-AGUA-001', 1, 'Aguas Andinas', 'Agua', 35000, '2026-10-29', 'Pendiente', 2000)"
 
         private const val SQL_SELECT_USUARIOS =
             "SELECT u.*, r.$NOMBRE_ROL AS $NOMBRE_ROL " +
@@ -148,8 +138,6 @@ class PagoFlexDbHelper(context: Context) :
         db.execSQL(SQL_PROTEGER_PAGOS_DELETE)
         db.execSQL(SQL_PRECARGAR_ROLES)
         db.execSQL(SQL_PRECARGAR_USUARIOS)
-        db.execSQL(SQL_PRECARGAR_COMPROMISOS)
-        db.execSQL(SQL_PRECARGAR_ENEL)
         db.execSQL(SQL_PRECARGAR_COMPROMISOS_CLIENTE)
         db.execSQL(
             "INSERT INTO $TABLA_SERVICIOS ($ID_USUARIO, $NOMBRE_EMPRESA, $RUT_PAGADOR, $ALIAS) " +
@@ -182,29 +170,22 @@ class PagoFlexDbHelper(context: Context) :
             db.execSQL("DROP TABLE $TABLA_SERVICIOS")
             db.execSQL("ALTER TABLE servicios_nueva RENAME TO $TABLA_SERVICIOS")
         }
-        if (oldVersion < 6) {
-            db.execSQL(SQL_CREAR_COMPROMISOS)
-            db.execSQL(SQL_CREAR_PAGOS)
-            db.execSQL(SQL_PROTEGER_PAGOS_UPDATE)
-            db.execSQL(SQL_PROTEGER_PAGOS_DELETE)
-            db.execSQL(SQL_PRECARGAR_COMPROMISOS)
-        }
         if (oldVersion < 7) {
-            db.execSQL(SQL_PRECARGAR_ENEL)
             db.execSQL(
                 "INSERT INTO $TABLA_SERVICIOS ($ID_USUARIO, $NOMBRE_EMPRESA, $RUT_PAGADOR, $ALIAS) " +
-                        "SELECT 1, 'Enel', '20.435.214-5', 'Cuenta de electricidad' " +
+                        "SELECT 1, 'Luz', '20.435.214-5', 'Enel' " +
                         "WHERE EXISTS (SELECT 1 FROM $TABLA_USUARIOS WHERE $ID_USUARIO = 1) " +
                         "AND NOT EXISTS (SELECT 1 FROM $TABLA_SERVICIOS WHERE $ID_USUARIO = 1 AND $NOMBRE_EMPRESA = 'Enel')"
             )
         }
-        if (oldVersion < 8) {
-            db.execSQL(SQL_PRECARGAR_COMPROMISOS_CLIENTE)
+        if (oldVersion < 9) {
+            db.execSQL("UPDATE $TABLA_COMPROMISOS SET $NOMBRE_EMPRESA = 'Duoc Uc' WHERE $FOLIO = 'PF-UNI-001' OR $NOMBRE_EMPRESA = 'Universidad'")
+            db.execSQL("UPDATE $TABLA_SERVICIOS SET $NOMBRE_EMPRESA = 'Enel' WHERE $NOMBRE_EMPRESA = 'Luz'")
         }
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion == 8 && newVersion == 7) return
+        if (oldVersion >= 8 && newVersion >= 7) return
         super.onDowngrade(db, oldVersion, newVersion)
     }
 
