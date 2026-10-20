@@ -203,19 +203,26 @@ private fun formatearMonto(monto: Int): String =
     "$" + java.text.NumberFormat.getIntegerInstance(java.util.Locale("es", "CL")).format(monto)
 
 private fun fechaVisibleInicio(fecha: String): String = try {
-    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(fecha)?.let {
-        java.text.SimpleDateFormat("dd 'de' MMM 'de' yyyy", java.util.Locale("es", "CL")).format(it)
+    val date = try {
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(fecha)
+    } catch (_: Exception) {
+        java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.US).parse(fecha)
+    }
+    date?.let {
+        java.text.SimpleDateFormat("dd 'de' MMMM 'de' yyyy", java.util.Locale("es", "CL")).format(it)
     } ?: fecha
 } catch (_: Exception) { fecha }
 
+
+//Vista previa del inicio
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun InicioPreview() {
     AppTheme {
         val usuario = Usuario(
-            rut = "12.345.678-5",
+            rut = "20.435.214-5",
             nombre = "Sofía",
-            correo = "sofia@pagoflex.cl",
+            correo = "sofia@duocuc.cl",
             rolId = 1L,
             rolNombre = "CLIENTE"
         )
@@ -223,19 +230,19 @@ private fun InicioPreview() {
         val compromisos = listOf(
             Compromiso(
                 folio = "PF-001",
-                empresa = "Universidad",
+                empresa = "Duoc Uc",
                 usuario = usuario,
                 concepto = "Mensualidad",
-                monto = 35000,
-                vencimiento = "15-10-2026"
+                monto = 356000,
+                vencimiento = "2026-10-25"
             ),
             Compromiso(
                 folio = "PF-002",
-                empresa = "Luz",
+                empresa = "Enel",
                 usuario = usuario,
                 concepto = "Cuenta de luz",
                 monto = 28000,
-                vencimiento = "20-10-2026"
+                vencimiento = "2026-10-20"
             )
         )
 
@@ -245,8 +252,8 @@ private fun InicioPreview() {
             servicios = listOf(
                 Servicio(
                     usuarioId = usuario.id,
-                    nombreEmpresa = "Universidad",
-                    rutPagador = "12.345.678-5",
+                    nombreEmpresa = "Instituto Profesional",
+                    rutPagador = "20.435.214-5",
                     alias = "Mensualidad"
                 )
             ),

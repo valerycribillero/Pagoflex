@@ -64,7 +64,7 @@ class PagoFlexViewModel : ViewModel() {
         val nuevo = Compromiso(
             folio = "PF-${(_compromisos.value.size + 1).toString().padStart(3, '0')}",
             empresa = "Crédito Andino",
-            usuario = usuarioDemo(persona, ""),
+            usuario = usuario(persona, ""),
             concepto = concepto,
             monto = monto,
             vencimiento = "30-10-2026"
@@ -72,10 +72,10 @@ class PagoFlexViewModel : ViewModel() {
         _compromisos.update { it + nuevo }
     }
 
-    private fun usuarioDemo(nombre: String, rut: String) = Usuario(
+    private fun usuario(nombre: String, rut: String) = Usuario(
         rut = rut,
         nombre = nombre,
-        correo = "demo@pagoflex.cl",
+        correo = "sofia@duocuc.cl",
         rolId = 1L,
         rolNombre = "CLIENTE"
     )

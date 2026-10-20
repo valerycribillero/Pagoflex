@@ -109,7 +109,12 @@ fun DetalleScreen(
 }
 
 private fun fechaVisible(fecha: String): String = try {
-    SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(fecha)?.let {
+    val date = try {
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(fecha)
+    } catch (_: Exception) {
+        SimpleDateFormat("dd-MM-yyyy", Locale.US).parse(fecha)
+    }
+    date?.let {
         SimpleDateFormat("dd-MM-yyyy", Locale("es", "CL")).format(it)
     } ?: fecha
 } catch (_: Exception) { fecha }
