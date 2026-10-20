@@ -57,7 +57,7 @@ fun UsuarioScreen(
 
             item {
                 TarjetaEstadistica(
-                    titulo = "Compromisos pendientes",
+                    etiqueta = "Compromisos pendientes",
                     valor = pendientes.size.toString()
                 )
             }

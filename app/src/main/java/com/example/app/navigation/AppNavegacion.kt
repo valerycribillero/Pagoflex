@@ -20,11 +20,13 @@ import com.example.app.ui.screens.AgenteScreen
 import com.example.app.ui.screens.AgregarServicioScreen
 import com.example.app.ui.screens.ComprobanteScreen
 import com.example.app.ui.screens.DetalleScreen
-import com.example.app.ui.screens.EmpresaScreen
 import com.example.app.ui.screens.FormularioScreen
 import com.example.app.ui.screens.HistorialPagosScreen
+import com.example.app.ui.screens.HistorialReportesScreen
 import com.example.app.ui.screens.InicioScreen
 import com.example.app.ui.screens.LoginScreen
+import com.example.app.ui.screens.MisServiciosScreen
+import com.example.app.ui.screens.PerfilScreen
 import com.example.app.ui.screens.ReportarProblemaScreen
 import com.example.app.viewmodel.PagoFlexViewModel
 
@@ -50,11 +52,18 @@ fun AppNavegacion() {
 
     val usuarioGuardado = remember {
         val idUsuario = sesionPreferencias.leer()
-        if (idUsuario == -1L) null else dbHelper.buscarPorId(idUsuario)
+        if (idUsuario == -1L) {
+            null
+        } else {
+            dbHelper.buscarPorId(idUsuario).also { usuario ->
+                if (usuario == null) sesionPreferencias.borrar()
+            }
+        }
     }
 
     // Cargar siempre los datos del usuario correspondiente.
     fun cargarDatosUsuario(usuarioId: Long) {
+        pagoFlexViewModel.cargarReportes(dbHelper.listarReportes())
         pagoFlexViewModel.cargarServicios(
             dbHelper.listarServicios(usuarioId)
         )
@@ -134,16 +143,43 @@ fun AppNavegacion() {
                 onVerDetalle = { folio ->
                     navController.navigate(Ruta.Detalle.crear(folio))
                 },
+                onVerPerfil = {
+                    navController.navigate(Ruta.Perfil.ruta)
+                },
                 onAgregarServicio = {
                     navController.navigate(Ruta.AgregarServicio.ruta)
+                },
+                onEliminarServicios = {
+                    navController.navigate(Ruta.MisServicios.ruta)
                 },
                 onVerHistorial = {
                     navController.navigate(Ruta.HistorialPagos.ruta)
                 },
                 onReportarProblema = {
                     navController.navigate(Ruta.ReportarProblema.ruta)
+                },
+                onVerHistorialReportes = {
+                    navController.navigate(Ruta.HistorialReportes.ruta)
                 }
             )
+        }
+
+        composable(Ruta.Perfil.ruta) {
+            val usuario = usuarioActual
+
+            if (usuario != null) {
+                PerfilScreen(
+                    usuario = usuario,
+                    compromisos = compromisos.filter {
+                        it.usuario.id == usuario.id
+                    },
+                    cantidadPagos = dbHelper.listarComprobantes(usuario.id).size,
+                    onVolver = {
+                        navController.navigateUp()
+                    },
+                    reportes = reportes
+                )
+            }
         }
 
         composable(Ruta.ReportarProblema.ruta) {
@@ -155,8 +191,8 @@ fun AppNavegacion() {
                     navController.navigateUp()
                 },
                 onReportar = { folio, motivo ->
-                    if (dbHelper.marcarCompromisoEnRevision(folio)) {
-                        pagoFlexViewModel.reportar(folio, motivo)
+                    if (dbHelper.registrarReporte(folio, motivo)) {
+                        pagoFlexViewModel.cargarReportes(dbHelper.listarReportes())
                         usuarioActual?.let {
                             pagoFlexViewModel.cargarCompromisos(
                                 dbHelper.listarCompromisos(it.id)
@@ -193,6 +229,12 @@ fun AppNavegacion() {
                     onVolver = {
                         navController.navigateUp()
                     },
+                    onServicioGuardado = {
+                        navController.navigate(Ruta.MisServicios.ruta) {
+                            popUpTo(Ruta.Usuario.ruta)
+                            launchSingleTop = true
+                        }
+                    },
                     onGuardarServicio = { servicio ->
                         val idServicio = dbHelper.insertarServicio(servicio)
 
@@ -209,63 +251,74 @@ fun AppNavegacion() {
             }
         }
 
+        composable(Ruta.MisServicios.ruta) {
+            MisServiciosScreen(
+                compromisos = compromisos.filter {
+                    it.usuario.id == usuarioActual?.id
+                },
+                onVolver = {
+                    navController.navigateUp()
+                },
+                onEliminar = { compromiso ->
+                    val usuario = usuarioActual
+                    if (usuario == null) {
+                        false
+                    } else {
+                        val eliminado = dbHelper.eliminarCompromiso(compromiso.folio, usuario.id)
+                        if (eliminado) {
+                            pagoFlexViewModel.cargarCompromisos(
+                                dbHelper.listarCompromisos(usuario.id)
+                            )
+                        }
+                        eliminado
+                    }
+                }
+            )
+        }
+
         composable(Ruta.Agente.ruta) {
             AgenteScreen(
+                usuario = usuarioActual,
                 reportes = reportes,
-                onVolver = {
+                onVerPerfil = {
+                    navController.navigate(Ruta.Perfil.ruta)
+                },
+                onVerHistorial = {
+                    navController.navigate(Ruta.HistorialReportes.ruta)
+                },
+                onCerrarSesion = {
                     sesionPreferencias.borrar()
                     pagoFlexViewModel.cerrarSesion()
                     navController.navigate(Ruta.Login.ruta) {
                         popUpTo(Ruta.Agente.ruta) { inclusive = true }
                     }
                 },
-                onResolver = pagoFlexViewModel::resolverReporte
+                onCambiarEstado = { reporte, estado ->
+                    val actualizado = if (estado == "En proceso") {
+                        dbHelper.actualizarEstadoReporte(reporte.folio, estado)
+                    } else {
+                        dbHelper.resolverReporte(reporte.folio, estado)
+                    }
+                    if (actualizado) {
+                        pagoFlexViewModel.cargarReportes(dbHelper.listarReportes())
+                        pagoFlexViewModel.cargarCompromisos(dbHelper.listarCompromisos())
+                    }
+                    actualizado
+                }
             )
         }
 
-        composable(Ruta.Empresa.ruta) {
-            EmpresaScreen(
-                compromisos = compromisos,
-                onVolver = {
-                    sesionPreferencias.borrar()
-                    pagoFlexViewModel.cerrarSesion()
-                    navController.navigate(Ruta.Login.ruta) {
-                        popUpTo(Ruta.Empresa.ruta) { inclusive = true }
-                    }
-                },
-                onRegistrar = { rut, concepto, monto, vencimiento ->
-                    val cliente = dbHelper.buscarUsuarioPorRut(rut)
-
-                    if (cliente == null || cliente.rolNombre != "CLIENTE") {
-                        false
-                    } else {
-                        val nuevo = Compromiso(
-                            folio = "PF-${System.currentTimeMillis()}",
-                            empresa = "Crédito Andino",
-                            usuario = cliente,
-                            concepto = concepto,
-                            monto = monto,
-                            vencimiento = vencimiento,
-                            estado = "Pendiente",
-                            recargo = 12000
-                        )
-
-                        val insertado = dbHelper.insertarCompromiso(
-                            nuevo,
-                            cliente.id
-                        )
-
-                        if (insertado != -1L) {
-                            usuarioActual?.let {
-                                pagoFlexViewModel.cargarCompromisos(
-                                    dbHelper.listarCompromisos()
-                                )
-                            }
-                        }
-
-                        insertado != -1L
-                    }
-                }
+        composable(Ruta.HistorialReportes.ruta) {
+            val esAgente = usuarioActual?.rolNombre == "AGENTE"
+            val foliosUsuario = compromisos
+                .filter { it.usuario.id == usuarioActual?.id }
+                .map { it.folio }
+                .toSet()
+            HistorialReportesScreen(
+                reportes = if (esAgente) reportes else reportes.filter { it.folio in foliosUsuario },
+                compromisos = compromisos.filter { it.usuario.id == usuarioActual?.id },
+                esAgente = esAgente,
+                onVolver = { navController.navigateUp() }
             )
         }
 
@@ -312,8 +365,8 @@ fun AppNavegacion() {
                         }
                     },
                     onReportar = { motivo ->
-                        if (dbHelper.marcarCompromisoEnRevision(folio)) {
-                            pagoFlexViewModel.reportar(folio, motivo)
+                        if (dbHelper.registrarReporte(folio, motivo)) {
+                            pagoFlexViewModel.cargarReportes(dbHelper.listarReportes())
                             usuarioActual?.let {
                                 pagoFlexViewModel.cargarCompromisos(
                                     dbHelper.listarCompromisos(it.id)
@@ -349,7 +402,6 @@ private fun rutaParaRol(rol: String): String {
     return when (rol) {
         "CLIENTE" -> Ruta.Usuario.ruta
         "AGENTE" -> Ruta.Agente.ruta
-        "EJECUTIVO" -> Ruta.Empresa.ruta
         else -> Ruta.Login.ruta
     }
 }

@@ -8,5 +8,12 @@ data class Comprobante(
     val montoPagado: Int,
     val fechaHora: String,
     val canal: String = "App",
-    val medioPago: String = "Pago simulado"
-)
+    val medioPago: String = "Tarjeta de débito"
+) {
+    val medioPagoVisible: String
+        get() = if (medioPago.equals("Pago simulado", ignoreCase = true)) {
+            "Tarjeta de débito"
+        } else {
+            medioPago
+        }
+}

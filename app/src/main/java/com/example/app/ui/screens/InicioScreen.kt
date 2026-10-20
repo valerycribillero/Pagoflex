@@ -1,11 +1,13 @@
 package com.example.app.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -19,6 +21,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,10 +40,11 @@ import com.example.app.model.Servicio
 import com.example.app.model.Usuario
 import com.example.app.ui.components.BotonPrincipal
 import com.example.app.ui.components.TarjetaCompromiso
-import com.example.app.ui.theme.AppTheme
-import com.example.app.ui.theme.FondoClaro
-import com.example.app.ui.theme.Morado
-import com.example.app.ui.theme.Turquesa
+import com.example.app.ui.theme.AppThemePreview
+import com.example.app.ui.theme.Primario
+import com.example.app.ui.theme.PrimarioClaro
+import com.example.app.ui.theme.PrimarioOscuro
+import com.example.app.ui.theme.Secundario
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,13 +55,27 @@ fun InicioScreen(
     servicios: List<Servicio>,
     onVolver: () -> Unit,
     onVerDetalle: (String) -> Unit,
+    onVerPerfil: () -> Unit,
     onAgregarServicio: () -> Unit,
+    onEliminarServicios: () -> Unit,
     onVerHistorial: () -> Unit,
-    onReportarProblema: () -> Unit
+    onReportarProblema: () -> Unit,
+    onVerHistorialReportes: () -> Unit
 ) {
     val pendientes = compromisos.filter { it.estado == "Pendiente" || it.estado == "Vencido" }
     val totalPendiente = pendientes.sumOf { it.monto + if (it.estado == "Vencido") it.recargo else 0 }
     val proximoCompromiso = pendientes.firstOrNull()
+    val modoOscuro = isSystemInDarkTheme()
+    val colorFondoResumen = if (modoOscuro) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Primario
+    }
+    val colorTextoResumen = if (modoOscuro) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        Color.White
+    }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -68,8 +86,8 @@ fun InicioScreen(
             ModalDrawerSheet {
                 Text(
                     text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = Turquesa)) { append("Pago") }
-                        withStyle(SpanStyle(color = Morado)) { append("Flex") }
+                        withStyle(SpanStyle(color = Primario)) { append("Pago") }
+                        withStyle(SpanStyle(color = Secundario)) { append("Flex") }
                     },
                     modifier = Modifier.padding(20.dp)
                 )
@@ -77,11 +95,29 @@ fun InicioScreen(
                 HorizontalDivider()
 
                 NavigationDrawerItem(
+                    label = { Text("Mi perfil") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onVerPerfil()
+                    }
+                )
+
+                NavigationDrawerItem(
                     label = { Text("Agregar servicio") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
                         onAgregarServicio()
+                    }
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Eliminar servicios") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onEliminarServicios()
                     }
                 )
 
@@ -103,6 +139,15 @@ fun InicioScreen(
                     }
                 )
 
+                NavigationDrawerItem(
+                    label = { Text("Historial de reportes") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onVerHistorialReportes()
+                    }
+                )
+
                 HorizontalDivider()
 
                 NavigationDrawerItem(
@@ -117,18 +162,18 @@ fun InicioScreen(
         }
     ) {
         Scaffold(
-            containerColor = FondoClaro,
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = {
                         Text(buildAnnotatedString {
-                            withStyle(SpanStyle(color = Turquesa)) { append("Pago") }
-                            withStyle(SpanStyle(color = Morado)) { append("Flex") }
+                            withStyle(SpanStyle(color = Primario)) { append("Pago") }
+                            withStyle(SpanStyle(color = Secundario)) { append("Flex") }
                         })
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White,
-                        navigationIconContentColor = Morado
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        navigationIconContentColor = Secundario
                     ),
                     navigationIcon = {
                         IconButton(
@@ -136,7 +181,7 @@ fun InicioScreen(
                                 scope.launch { drawerState.open() }
                             }
                         ) {
-                            Text("☰", color = Morado)
+                            Text("☰", color = Secundario)
                         }
                     }
                 )
@@ -161,16 +206,25 @@ fun InicioScreen(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Turquesa)
+                        colors = CardDefaults.cardColors(containerColor = colorFondoResumen)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text("Total pendiente", color = Color.White)
-                            Text(formatearMonto(totalPendiente), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                            Text("Próximo vencimiento", color = Color.White)
-                            Text(proximoCompromiso?.let { fechaVisibleInicio(it.vencimiento) } ?: "Sin pagos pendientes", color = Color.White)
+                            Text("Total pendiente", color = colorTextoResumen)
+                            Text(formatearMonto(totalPendiente), style = MaterialTheme.typography.headlineSmall, color = colorTextoResumen)
+                            Surface(
+                                color = if (modoOscuro) Primario else PrimarioClaro,
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(
+                                    "Próximo vencimiento",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = if (modoOscuro) Color.White else Primario
+                                )
+                            }
+                            Text(proximoCompromiso?.let { fechaVisibleInicio(it.vencimiento) } ?: "Sin pagos pendientes", color = colorTextoResumen)
                         }
                     }
                 }
@@ -215,10 +269,11 @@ private fun fechaVisibleInicio(fecha: String): String = try {
 
 
 //Vista previa del inicio
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(name = "Inicio claro", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "Inicio oscuro", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun InicioPreview() {
-    AppTheme {
+    AppThemePreview {
         val usuario = Usuario(
             rut = "20.435.214-5",
             nombre = "Sofía",
@@ -259,9 +314,12 @@ private fun InicioPreview() {
             ),
             onVolver = {},
             onVerDetalle = {},
+            onVerPerfil = {},
             onAgregarServicio = {},
+            onEliminarServicios = {},
             onVerHistorial = {},
-            onReportarProblema = {}
+            onReportarProblema = {},
+            onVerHistorialReportes = {}
         )
     }
 }

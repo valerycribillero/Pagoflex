@@ -1,5 +1,6 @@
 package com.example.app.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,14 +31,15 @@ import com.example.app.model.ServicioUiState
 import com.example.app.ui.components.BotonPrincipal
 import com.example.app.ui.components.CampoTexto
 import com.example.app.ui.components.TarjetaSeccion
-import com.example.app.ui.theme.AppTheme
-import com.example.app.ui.theme.Morado
+import com.example.app.ui.theme.AppThemePreview
+import com.example.app.ui.theme.Secundario
 import com.example.app.viewmodel.ServicioViewModel
 
 @Composable
 fun AgregarServicioScreen(
     usuarioId: Long,
     onVolver: () -> Unit,
+    onServicioGuardado: () -> Unit,
     onGuardarServicio: (Servicio) -> Boolean,
     viewModel: ServicioViewModel = viewModel()
 ) {
@@ -53,7 +55,7 @@ fun AgregarServicioScreen(
             val servicio = viewModel.onAgregar(usuarioId)
             if (servicio != null) {
                 if (onGuardarServicio(servicio)) {
-                    onVolver()
+                    onServicioGuardado()
                 } else {
                     viewModel.onGuardadoFallido()
                 }
@@ -81,7 +83,7 @@ fun AgregarServicioContent(
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = "Volver",
-                            tint = Morado
+                            tint = Secundario
                         )
                     }
                 }
@@ -137,12 +139,31 @@ fun AgregarServicioContent(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 private fun AgregarServicioPreview() {
-    AppTheme {
+    AppThemePreview {
         AgregarServicioContent(
             uiState = ServicioUiState(),
+            onVolver = {},
+            onNombreEmpresaCambia = {},
+            onRutPagadorCambia = {},
+            onAliasCambia = {},
+            onAgregar = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AgregarServicioConErroresPreview() {
+    AppThemePreview {
+        AgregarServicioContent(
+            uiState = ServicioUiState(
+                errorNombreEmpresa = "El nombre de la empresa es obligatorio",
+                errorRutPagador = "Ingresa un RUT válido con puntos y guion",
+                errorAlias = "El alias es obligatorio"
+            ),
             onVolver = {},
             onNombreEmpresaCambia = {},
             onRutPagadorCambia = {},

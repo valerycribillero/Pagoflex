@@ -7,4 +7,5 @@ object Dimens {
     val espacioMedio = 16.dp
     val radioTarjeta = 12.dp
     val radioBoton = 10.dp
+    val elevacionTarjeta = 2.dp
 }

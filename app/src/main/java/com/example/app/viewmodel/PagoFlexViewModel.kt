@@ -40,6 +40,10 @@ class PagoFlexViewModel : ViewModel() {
         _compromisos.value = compromisos
     }
 
+    fun cargarReportes(reportes: List<Reporte>) {
+        _reportes.value = reportes
+    }
+
     fun agregarServicio(servicio: Servicio) {
         _servicios.update { lista -> listOf(servicio) + lista }
     }
@@ -50,33 +54,4 @@ class PagoFlexViewModel : ViewModel() {
         }
     }
 
-    fun reportar(folio: String, motivo: String) {
-        _reportes.update { lista -> lista + Reporte(folio, motivo) }
-    }
-
-    fun resolverReporte(reporte: Reporte) {
-        _reportes.update { lista ->
-            lista.map { if (it == reporte) it.copy(estado = "Resuelto") else it }
-        }
-    }
-
-    fun registrarCompromiso(persona: String, concepto: String, monto: Int) {
-        val nuevo = Compromiso(
-            folio = "PF-${(_compromisos.value.size + 1).toString().padStart(3, '0')}",
-            empresa = "Crédito Andino",
-            usuario = usuario(persona, ""),
-            concepto = concepto,
-            monto = monto,
-            vencimiento = "30-10-2026"
-        )
-        _compromisos.update { it + nuevo }
-    }
-
-    private fun usuario(nombre: String, rut: String) = Usuario(
-        rut = rut,
-        nombre = nombre,
-        correo = "sofia@duocuc.cl",
-        rolId = 1L,
-        rolNombre = "CLIENTE"
-    )
 }

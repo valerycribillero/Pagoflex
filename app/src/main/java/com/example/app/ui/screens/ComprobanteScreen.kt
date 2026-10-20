@@ -28,7 +28,7 @@ fun ComprobanteScreen(comprobante: Comprobante?, onVolver: () -> Unit) {
             Text("Total pagado: $${comprobante.montoPagado}")
             Text("Fecha: ${comprobante.fechaHora}")
             Text("Canal: ${comprobante.canal}")
-            Text("Medio: ${comprobante.medioPago}")
+            Text("Medio de pago: ${comprobante.medioPagoVisible}")
             Text("Guarda este número para consultar el pago.")
         }
         BotonPrincipal("Volver", onVolver, Modifier.fillMaxWidth())

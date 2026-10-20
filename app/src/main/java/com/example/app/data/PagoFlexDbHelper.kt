@@ -10,6 +10,7 @@ import com.example.app.model.Comprobante
 import com.example.app.model.Compromiso
 import com.example.app.model.Servicio
 import com.example.app.model.Usuario
+import com.example.app.model.Reporte
 
 
 class PagoFlexDbHelper(context: Context) :
@@ -17,12 +18,13 @@ class PagoFlexDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_BD = "PagoFlex.db"
-        private const val VERSION_BD = 9
+        private const val VERSION_BD = 13
         private const val TABLA_ROLES = "roles"
         private const val TABLA_USUARIOS = "usuarios"
         private const val TABLA_SERVICIOS = "servicios"
         private const val TABLA_COMPROMISOS = "compromisos"
         private const val TABLA_PAGOS = "pagos"
+        private const val TABLA_REPORTES = "reportes"
 
         private const val ID_ROL = "id_rol"
         private const val NOMBRE_ROL = "nombre_rol"
@@ -49,6 +51,9 @@ class PagoFlexDbHelper(context: Context) :
         private const val FECHA_HORA = "fecha_hora"
         private const val CANAL = "canal"
         private const val MEDIO_PAGO = "medio_pago"
+        private const val MOTIVO_REPORTE = "motivo"
+        private const val ESTADO_REPORTE = "estado_reporte"
+        private const val FECHA_REPORTE = "fecha_reporte"
 
         private const val SQL_CREAR_ROLES =
             "CREATE TABLE $TABLA_ROLES ("+
@@ -90,6 +95,14 @@ class PagoFlexDbHelper(context: Context) :
                     "$NOMBRE_EMPRESA TEXT NOT NULL, $CONCEPTO TEXT NOT NULL, " +
                     "$MONTO_PAGADO INTEGER NOT NULL, $FECHA_HORA TEXT NOT NULL, $CANAL TEXT NOT NULL, $MEDIO_PAGO TEXT NOT NULL)"
 
+        private const val SQL_CREAR_REPORTES =
+            "CREATE TABLE $TABLA_REPORTES (" +
+                    "id_reporte INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "$FOLIO TEXT NOT NULL UNIQUE REFERENCES $TABLA_COMPROMISOS($FOLIO), " +
+                    "$MOTIVO_REPORTE TEXT NOT NULL, " +
+                    "$ESTADO_REPORTE TEXT NOT NULL DEFAULT 'Pendiente', " +
+                    "$FECHA_REPORTE TEXT NOT NULL)"
+
         private const val SQL_PROTEGER_PAGOS_UPDATE =
             "CREATE TRIGGER IF NOT EXISTS pagos_sin_modificacion " +
                     "BEFORE UPDATE ON $TABLA_PAGOS BEGIN SELECT RAISE(ABORT, 'El comprobante es inmutable'); END"
@@ -100,13 +113,12 @@ class PagoFlexDbHelper(context: Context) :
 
         private const val SQL_PRECARGAR_ROLES =
             "INSERT INTO $TABLA_ROLES ($ID_ROL, $NOMBRE_ROL) VALUES " +
-                    "(1, 'CLIENTE'), (2, 'AGENTE'), (3, 'EJECUTIVO')"
+                    "(1, 'CLIENTE'), (2, 'AGENTE')"
 
         private const val SQL_PRECARGAR_USUARIOS =
             "INSERT INTO $TABLA_USUARIOS ($RUT, $NOMBRE, $CORREO, $CONTRASENA, $ID_ROL) VALUES " +
                     "('20.435.214-5', 'Sofia Perez', 'sofia@duocuc.cl', 'cli123', 1), " +
-                    "('10.625.244-K', 'Matias Sanchez', 'matias@pagoflex.com', 'age123', 2), " +
-                    "('9.742.142-2', 'Miranda Sepulveda', 'miranda@empresa.com', 'eje123', 3)"
+                    "('10.625.244-K', 'Matias Sanchez', 'matias@pagoflex.com', 'age123', 2)"
 
 
         private const val SQL_PRECARGAR_COMPROMISOS_CLIENTE =
@@ -116,6 +128,18 @@ class PagoFlexDbHelper(context: Context) :
                     "('PF-LUZ-001', 1, 'Enel', 'Luz', 28000, '2026-10-20', 'Pendiente', 1100), " +
                     "('PF-COND-001', 1, 'Condominio', 'Gasto común', 45000, '2026-10-28', 'Pendiente', 3000), " +
                     "('PF-AGUA-001', 1, 'Aguas Andinas', 'Agua', 35000, '2026-10-29', 'Pendiente', 2000)"
+
+        private const val SQL_MIGRAR_COMPROMISOS_CLIENTE =
+            "INSERT OR IGNORE INTO $TABLA_COMPROMISOS " +
+                    "($FOLIO, $ID_USUARIO, $NOMBRE_EMPRESA, $CONCEPTO, $MONTO, $VENCIMIENTO, $ESTADO, $RECARGO) " +
+                    "SELECT 'PF-UNI-001', $ID_USUARIO, 'Duoc Uc', 'Mensualidad', 356000, '2026-10-25', 'Pendiente', 7000 " +
+                    "FROM $TABLA_USUARIOS WHERE $RUT = '20.435.214-5' " +
+                    "UNION ALL SELECT 'PF-LUZ-001', $ID_USUARIO, 'Enel', 'Luz', 28000, '2026-10-20', 'Pendiente', 1100 " +
+                    "FROM $TABLA_USUARIOS WHERE $RUT = '20.435.214-5' " +
+                    "UNION ALL SELECT 'PF-COND-001', $ID_USUARIO, 'Condominio', 'Gasto común', 45000, '2026-10-28', 'Pendiente', 3000 " +
+                    "FROM $TABLA_USUARIOS WHERE $RUT = '20.435.214-5' " +
+                    "UNION ALL SELECT 'PF-AGUA-001', $ID_USUARIO, 'Aguas Andinas', 'Agua', 35000, '2026-10-29', 'Pendiente', 2000 " +
+                    "FROM $TABLA_USUARIOS WHERE $RUT = '20.435.214-5'"
 
         private const val SQL_SELECT_USUARIOS =
             "SELECT u.*, r.$NOMBRE_ROL AS $NOMBRE_ROL " +
@@ -134,6 +158,7 @@ class PagoFlexDbHelper(context: Context) :
         db.execSQL(SQL_CREAR_SERVICIOS)
         db.execSQL(SQL_CREAR_COMPROMISOS)
         db.execSQL(SQL_CREAR_PAGOS)
+        db.execSQL(SQL_CREAR_REPORTES)
         db.execSQL(SQL_PROTEGER_PAGOS_UPDATE)
         db.execSQL(SQL_PROTEGER_PAGOS_DELETE)
         db.execSQL(SQL_PRECARGAR_ROLES)
@@ -181,6 +206,16 @@ class PagoFlexDbHelper(context: Context) :
         if (oldVersion < 9) {
             db.execSQL("UPDATE $TABLA_COMPROMISOS SET $NOMBRE_EMPRESA = 'Duoc Uc' WHERE $FOLIO = 'PF-UNI-001' OR $NOMBRE_EMPRESA = 'Universidad'")
             db.execSQL("UPDATE $TABLA_SERVICIOS SET $NOMBRE_EMPRESA = 'Enel' WHERE $NOMBRE_EMPRESA = 'Luz'")
+        }
+        if (oldVersion < 10) {
+            db.execSQL(SQL_MIGRAR_COMPROMISOS_CLIENTE)
+        }
+        if (oldVersion < 11) {
+            db.execSQL(SQL_CREAR_REPORTES)
+        }
+        if (oldVersion < 13) {
+            db.execSQL("DELETE FROM $TABLA_USUARIOS WHERE $CORREO = 'miranda@empresa.com'")
+            db.execSQL("DELETE FROM $TABLA_ROLES WHERE $NOMBRE_ROL = 'EJECUTIVO'")
         }
     }
 
@@ -249,9 +284,30 @@ class PagoFlexDbHelper(context: Context) :
         }
     )
 
-    fun buscarUsuarioPorRut(rut: String): Usuario? = consultarUsuarios(
-        "$SQL_SELECT_USUARIOS WHERE u.$RUT = ?", arrayOf(rut.trim())
-    ).firstOrNull()
+    fun eliminarCompromiso(folio: String, idUsuario: Long): Boolean {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val tienePagoOReporte = db.rawQuery(
+                "SELECT 1 FROM $TABLA_PAGOS WHERE $FOLIO = ? " +
+                        "UNION ALL SELECT 1 FROM $TABLA_REPORTES WHERE $FOLIO = ? LIMIT 1",
+                arrayOf(folio, folio)
+            ).use { it.moveToFirst() }
+            if (tienePagoOReporte) return false
+
+            val eliminados = db.delete(
+                TABLA_COMPROMISOS,
+                "$FOLIO = ? AND $ID_USUARIO = ? AND $ESTADO IN ('Pendiente', 'Vencido')",
+                arrayOf(folio, idUsuario.toString())
+            )
+            if (eliminados != 1) return false
+
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
+    }
 
     fun marcarCompromisoEnRevision(folio: String): Boolean {
         val valores = ContentValues().apply { put(ESTADO, "En revisión") }
@@ -261,6 +317,98 @@ class PagoFlexDbHelper(context: Context) :
             "$FOLIO = ? AND $ESTADO IN ('Pendiente', 'Vencido')",
             arrayOf(folio)
         ) == 1
+    }
+
+    fun registrarReporte(folio: String, motivo: String): Boolean {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val actualizado = db.update(
+                TABLA_COMPROMISOS,
+                ContentValues().apply { put(ESTADO, "En revisión") },
+                "$FOLIO = ? AND $ESTADO IN ('Pendiente', 'Vencido')",
+                arrayOf(folio)
+            )
+            if (actualizado != 1) return false
+
+            val fecha = java.text.SimpleDateFormat(
+                "yyyy-MM-dd HH:mm:ss",
+                java.util.Locale.US
+            ).format(java.util.Date())
+            val insertado = db.insert(
+                TABLA_REPORTES,
+                null,
+                ContentValues().apply {
+                    put(FOLIO, folio)
+                    put(MOTIVO_REPORTE, motivo)
+                    put(ESTADO_REPORTE, "Pendiente")
+                    put(FECHA_REPORTE, fecha)
+                }
+            )
+            if (insertado == -1L) return false
+
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun listarReportes(): List<Reporte> {
+        val lista = mutableListOf<Reporte>()
+        readableDatabase.rawQuery(
+            "SELECT $FOLIO, $MOTIVO_REPORTE, $ESTADO_REPORTE FROM $TABLA_REPORTES ORDER BY $FECHA_REPORTE DESC",
+            null
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                lista.add(
+                    Reporte(
+                        folio = cursor.getString(cursor.getColumnIndexOrThrow(FOLIO)),
+                        motivo = cursor.getString(cursor.getColumnIndexOrThrow(MOTIVO_REPORTE)),
+                        estado = cursor.getString(cursor.getColumnIndexOrThrow(ESTADO_REPORTE))
+                    )
+                )
+            }
+        }
+        return lista
+    }
+
+    fun actualizarEstadoReporte(folio: String, estado: String): Boolean {
+        if (estado != "En proceso") return false
+        return writableDatabase.update(
+            TABLA_REPORTES,
+            ContentValues().apply { put(ESTADO_REPORTE, estado) },
+            "$FOLIO = ? AND $ESTADO_REPORTE = 'Pendiente'",
+            arrayOf(folio)
+        ) == 1
+    }
+
+    fun resolverReporte(folio: String, estadoCompromiso: String): Boolean {
+        if (estadoCompromiso !in listOf("Pendiente", "Anulado")) return false
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val compromisoActualizado = db.update(
+                TABLA_COMPROMISOS,
+                ContentValues().apply { put(ESTADO, estadoCompromiso) },
+                "$FOLIO = ? AND $ESTADO = 'En revisión'",
+                arrayOf(folio)
+            )
+            if (compromisoActualizado != 1) return false
+
+            val reporteActualizado = db.update(
+                TABLA_REPORTES,
+                ContentValues().apply { put(ESTADO_REPORTE, "Resuelto") },
+                "$FOLIO = ? AND $ESTADO_REPORTE = 'En proceso'",
+                arrayOf(folio)
+            )
+            if (reporteActualizado != 1) return false
+
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
     }
 
     fun confirmarPago(folio: String, medioPago: String): Comprobante? {
@@ -398,6 +546,15 @@ class PagoFlexDbHelper(context: Context) :
                 put(ALIAS, servicio.alias)
             }
         )
+    }
+
+    fun eliminarServicio(idServicio: Long, idUsuario: Long): Boolean {
+        val filasEliminadas = writableDatabase.delete(
+            TABLA_SERVICIOS,
+            "$ID_SERVICIO = ? AND $ID_USUARIO = ?",
+            arrayOf(idServicio.toString(), idUsuario.toString())
+        )
+        return filasEliminadas > 0
     }
 
     fun listarServicios(idUsuario: Long): List<Servicio> {

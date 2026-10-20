@@ -70,13 +70,12 @@ fun DetalleScreen(
             text = {
                 Column {
                     Text("Pagarás el total de $${total} a ${compromiso.empresa}.")
-                    Text("Pago simulado. No se solicitarán datos de tarjeta ni bancarios.")
-                    Text("Medio: Pago simulado")
+                    Text("Medio de pago: Tarjeta de débito")
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val realizado = onPagar("Pago simulado")
+                    val realizado = onPagar("Tarjeta de débito")
                     if (realizado) {
                         mostrarConfirmacion = false
                         errorPago = null

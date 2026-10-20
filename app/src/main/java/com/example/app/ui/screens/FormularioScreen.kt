@@ -1,5 +1,6 @@
 package com.example.app.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,7 +43,7 @@ import com.example.app.ui.components.CampoContrasena
 import com.example.app.ui.components.CampoTexto
 import com.example.app.ui.components.CasillaConTexto
 import com.example.app.ui.components.TarjetaSeccion
-import com.example.app.ui.theme.AppTheme
+import com.example.app.ui.theme.AppThemePreview
 import com.example.app.viewmodel.FormularioViewModel
 import kotlinx.coroutines.launch
 
@@ -213,10 +214,11 @@ fun FormularioContent(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(name = "Formulario claro", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "Formulario oscuro", showBackground = true, showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun FormularioVacioPreview() {
-    AppTheme {
+    AppThemePreview {
         FormularioContent(
             uiState = FormularioUiState(),
             onNombreCambia = {}, onRutCambia = {}, onCorreoCambia = {},
@@ -226,10 +228,11 @@ private fun FormularioVacioPreview() {
     }
 }
 
-@Preview(showBackground = true, heightDp = 1400, name = "Con errores")
+@Preview(name = "Errores claro", showBackground = true, heightDp = 1400, uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "Errores oscuro", showBackground = true, heightDp = 1400, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun FormularioConErroresPreview(){
-    AppTheme{
+    AppThemePreview {
         FormularioContent(
             uiState = FormularioUiState(
                 errorNombre = "El nombre es obligatorio",
